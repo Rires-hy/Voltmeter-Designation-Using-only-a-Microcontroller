@@ -1,0 +1,256 @@
+MPASM  5.41                        DEMO-1.ASM   12-3-2021  15:50:36         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[205]: Found directive in column 1. (list)
+                      00001 list p=pic18f458,F=INHX32,N=0,ST=OFF,R=HEX
+                      00002 #include <P18F458.INC>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC18F458 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      02764         LIST
+                      00003 
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00004 CONFIG OSC=HS ;, OSCS=OFF;high-speed XTAL as clk source
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00005 CONFIG WDT=OFF;disable watchdog timer;
+                      00006 
+                      00007 ;Brown-out Reset Volt = 4.5V and Power-up Timer is on
+                      00008 ;CONFIG BORV=45, PWRT=ON, BOR=ON
+                      00009 
+                      00010 ;no Background debug, no Reset if stack overflows, pin RB5=I/O
+                      00011 ;CONFIG DEBUG=OFF, LVP=OFF, STVR=OFF
+                      00012 
+  00000050            00013 RESULT_H        EQU 50H
+  00000051            00014 RESULT_L        EQU 51H
+  00000052            00015 DENOM           EQU     52H
+  00000053            00016 DECODE1         EQU 53H
+  00000054            00017 INTEGER         EQU 54H
+  00000055            00018 DECIMAL         EQU 55H
+  00000056            00019 ZERO            EQU 56H
+  00000057            00020 ONE             EQU 57H
+  00000058            00021 TWO                     EQU 58H
+  00000059            00022 THREE       EQU 59H
+  00000061            00023 FOUR            EQU 61H
+  00000062            00024 FIVE            EQU 62H
+  00000063            00025 SIX                     EQU 63H
+  00000064            00026 SEVEN           EQU 64H
+  00000065            00027 EIGHT           EQU 65H
+  00000066            00028 NINE            EQU 66H
+  00000067            00029 R1                      EQU 0X67
+  00000068            00030 R2                      EQU 0X68
+  00000069            00031 R3                      EQU 0X69
+                      00032 
+                      00033                 ORG 0000H
+000000 EF?? F???      00034                 GOTO MAIN
+                      00035 
+                      00036                 ORG 0008H
+000008 AC9E           00037                 BTFSS PIR1,ADIF
+00000A 0010           00038                 RETFIE
+00000C EF?? F???      00039                 GOTO AD_ISR
+                      00040                 
+                      00041                 ORG 100H
+000100 8092           00042 MAIN    BSF TRISA,0
+000102 0E81           00043                 MOVLW 81H
+000104 6EC2           00044                 MOVWF ADCON0
+000106 0ECE           00045                 MOVLW 0CEH
+000108 6EC1           00046                 MOVWF ADCON1
+00010A 6AC3           00047                 CLRF ADRESL
+00010C 6AC4           00048                 CLRF ADRESH
+                      00049 
+00010E 9C9E           00050                 BCF PIR1,ADIF
+000110 8C9D           00051                 BSF PIE1,ADIE
+000112 8CF2           00052                 BSF INTCON,PEIE
+000114 8EF2           00053                 BSF INTCON,GIE
+                      00054 
+000116 84C2           00055 OVER    BSF ADCON0,GO
+000118 D???           00056                 BRA OVER
+                      00057 
+                      00058 
+00011A                00059 AD_ISR  
+                      00060                 ORG 200H
+000200 CFC3 F051      00061                 MOVFF ADRESL,RESULT_L
+000204 CFC4 F050      00062                 MOVFF ADRESH,RESULT_H
+000208 EC?? F???      00063                 CALL QSEC_DELAY 
+00020C 6A53           00064                 CLRF DECODE1
+                      00065 
+00020E 0E00           00066                 MOVLW D'0'
+000210 6250           00067                 CPFSEQ RESULT_H
+000212 D???           00068                 BRA HIGH_PROCESS
+000214 D???           00069                 BRA  LOW_PROCESS
+000216                00070 HIGH_PROCESS
+000216 2A53           00071                 INCF DECODE1,F  
+000218 0E18           00072                 MOVLW D'24'
+00021A 6E52           00073                 MOVWF DENOM
+00021C 5E51           00074                 SUBWF RESULT_L,F
+00021E 0E00           00075                 MOVLW D'0'
+000220 5A50           00076                 SUBWFB RESULT_H,F
+000222 0E00           00077                 MOVLW D'0'
+000224 6250           00078                 CPFSEQ RESULT_H
+000226 D???           00079                 BRA  HIGH_PROCESS
+000228                00080 LOW_PROCESS
+000228 2A53           00081                 INCF DECODE1,F
+00022A 0E18           00082                 MOVLW D'24'
+00022C 5E51           00083                 SUBWF RESULT_L,F
+00022E E2??           00084                 BC LOW_PROCESS
+000230 0653           00085                 DECF DECODE1,F
+                      00086                 
+000232                00087 SEPARATED_PROCESS
+000232 6A54           00088                 CLRF INTEGER
+000234 6A55           00089                 CLRF DECIMAL
+000236 C053 F055      00090                 MOVFF DECODE1,DECIMAL
+00023A 0E0A           00091                 MOVLW D'10'
+00023C 2A54           00092 BACK    INCF INTEGER,F
+00023E 5E55           00093                 SUBWF DECIMAL,F
+000240 E2??           00094                 BC BACK
+000242 0654           00095                 DECF INTEGER,F
+000244 2655           00096                 ADDWF DECIMAL,F
+                      00097 
+000246                00098 DISPLAY 
+000246 6A93           00099                 CLRF TRISB
+000248 6A94           00100                 CLRF TRISC
+00024A 6A81           00101                 CLRF PORTB
+00024C 6A82           00102                 CLRF PORTC
+                      00103 
+00024E 0E00           00104                 MOVLW D'0'
+000250 6E56           00105                 MOVWF ZERO
+000252 0E01           00106                 MOVLW D'1'
+000254 6E57           00107                 MOVWF ONE
+000256 0E02           00108                 MOVLW D'2'
+000258 6E58           00109                 MOVWF TWO
+00025A 0E03           00110                 MOVLW D'3'
+00025C 6E59           00111                 MOVWF THREE
+00025E 0E04           00112                 MOVLW D'4'
+000260 6F61           00113                 MOVWF FOUR
+000262 0E05           00114                 MOVLW D'5'
+000264 6F62           00115                 MOVWF FIVE
+000266 0E06           00116                 MOVLW D'6'
+000268 6F63           00117                 MOVWF SIX
+00026A 0E07           00118                 MOVLW D'7'
+00026C 6F64           00119                 MOVWF SEVEN
+00026E 0E08           00120                 MOVLW D'8'
+000270 6F65           00121                 MOVWF EIGHT
+000272 0E09           00122                 MOVLW D'9'
+000274 6F66           00123                 MOVWF NINE
+                      00124 
+000276                00125 INTEGER_START           
+000276 5054           00126                 MOVF INTEGER,W
+000278 6256           00127 IF0             CPFSEQ ZERO
+00027A D???           00128                 BRA IF1
+00027C 0E40           00129                 MOVLW B'01000000' 
+00027E 6E81           00130                 MOVWF PORTB
+000280 6257           00131 IF1             CPFSEQ ONE
+000282 D???           00132                 BRA IF2
+000284 0EF9           00133                 MOVLW 0xF9 
+000286 6E81           00134                 MOVWF PORTB
+000288 6258           00135 IF2             CPFSEQ TWO
+00028A D???           00136                 BRA IF3
+00028C 0EA4           00137                 MOVLW 0xA4 
+00028E 6E81           00138                 MOVWF PORTB
+000290 6259           00139 IF3             CPFSEQ THREE
+000292 D???           00140                 BRA IF4
+000294 0EB0           00141                 MOVLW D'176' 
+000296 6E81           00142                 MOVWF PORTB
+000298 6361           00143 IF4             CPFSEQ FOUR
+00029A D???           00144                 BRA IF5
+00029C 0E99           00145                 MOVLW 99H 
+00029E 6E81           00146                 MOVWF PORTB
+0002A0 6362           00147 IF5             CPFSEQ FIVE
+0002A2 D???           00148                 BRA IF6
+0002A4 0E92           00149                 MOVLW 92H 
+0002A6 6E81           00150                 MOVWF PORTB
+0002A8 6363           00151 IF6             CPFSEQ SIX
+0002AA D???           00152                 BRA IF7
+0002AC 0E82           00153                 MOVLW 82H 
+0002AE 6E81           00154                 MOVWF PORTB
+0002B0 6364           00155 IF7             CPFSEQ SEVEN
+0002B2 D???           00156                 BRA IF8
+0002B4 0EF8           00157                 MOVLW 0xF8 
+0002B6 6E81           00158                 MOVWF PORTB
+0002B8 6365           00159 IF8             CPFSEQ EIGHT
+0002BA D???           00160                 BRA IF9
+0002BC 0E80           00161                 MOVLW 80H 
+0002BE 6E81           00162                 MOVWF PORTB
+0002C0 6366           00163 IF9             CPFSEQ NINE
+0002C2 D???           00164                 BRA DECIMAL_START
+0002C4 0E90           00165                 MOVLW 90H 
+0002C6 6E81           00166                 MOVWF PORTB
+                      00167 
+0002C8                00168 DECIMAL_START
+0002C8 5055           00169                 MOVF DECIMAL,W
+0002CA 6256           00170 IIF0    CPFSEQ ZERO
+0002CC D???           00171                 BRA IIF1
+0002CE 0E40           00172                 MOVLW B'01000000' 
+0002D0 6E82           00173                 MOVWF PORTC
+0002D2 6257           00174 IIF1    CPFSEQ ONE
+0002D4 D???           00175                 BRA IIF2
+0002D6 0EF9           00176                 MOVLW 0xF9 
+0002D8 6E82           00177                 MOVWF PORTC
+0002DA 6258           00178 IIF2    CPFSEQ TWO
+0002DC D???           00179                 BRA IIF3
+0002DE 0EA4           00180                 MOVLW 0xA4 
+0002E0 6E82           00181                 MOVWF PORTC
+0002E2 6259           00182 IIF3    CPFSEQ THREE
+0002E4 D???           00183                 BRA IIF4
+0002E6 0EB0           00184                 MOVLW D'176' 
+0002E8 6E82           00185                 MOVWF PORTC
+0002EA 6361           00186 IIF4    CPFSEQ FOUR
+0002EC D???           00187                 BRA IIF5
+0002EE 0E99           00188                 MOVLW 99H 
+0002F0 6E82           00189                 MOVWF PORTC
+0002F2 6362           00190 IIF5    CPFSEQ FIVE
+0002F4 D???           00191                 BRA IIF6
+0002F6 0E92           00192                 MOVLW 92H 
+0002F8 6E82           00193                 MOVWF PORTC
+0002FA 6363           00194 IIF6    CPFSEQ SIX
+0002FC D???           00195                 BRA IIF7
+0002FE 0E82           00196                 MOVLW 82H 
+000300 6E82           00197                 MOVWF PORTC
+000302 6364           00198 IIF7    CPFSEQ SEVEN
+000304 D???           00199                 BRA IIF8
+000306 0EF8           00200                 MOVLW 0xF8 
+000308 6E82           00201                 MOVWF PORTC
+00030A 6365           00202 IIF8    CPFSEQ EIGHT
+00030C D???           00203                 BRA IIF9
+00030E 0E80           00204                 MOVLW 80H 
+000310 6E82           00205                 MOVWF PORTC
+000312 6366           00206 IIF9    CPFSEQ NINE
+000314 D???           00207                 BRA HEERE
+000316 0E90           00208                 MOVLW 90H 
+000318 6E82           00209                 MOVWF PORTC
+                      00210                 
+00031A 9E81           00211 HEERE   BCF PORTB,7
+00031C 9C9E           00212                 BCF PIR1,ADIE
+00031E 0010           00213                 RETFIE
+                      00214                 
+000320                00215 QSEC_DELAY
+000320 0E02           00216                 MOVLW D'2'
+000322 6F67           00217                 MOVWF R1
+000324 0EFA           00218 D1              MOVLW D'250'
+000326 6F68           00219                 MOVWF R2
+000328 0EFA           00220 D2              MOVLW D'250'
+00032A 6F69           00221                 MOVWF R3
+00032C 0000           00222 D3              NOP
+00032E 0000           00223                 NOP
+000330 0769           00224                 DECF R3,F
+000332 E1??           00225                 BNZ D3
+000334 0768           00226                 DECF R2,F
+000336 E1??           00227                 BNZ D2
+000338 0767           00228                 DECF R1,F
+00033A E1??           00229                 BNZ D1   
+00033C 0012           00230                 RETURN
+                      00231 
+                      00232                 END
+
+Errors   :     0
+Warnings :     3 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+
